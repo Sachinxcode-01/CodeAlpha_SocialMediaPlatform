@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       elements.sidebarUserCard.innerHTML = `
         <div class="user-card-profile">
-          <div class="user-avatar-lg">🌟</div>
+          <div class="user-avatar-lg">NC</div>
           <h3 class="user-display-name">Welcome to NovaConnect</h3>
           <p class="user-bio-text">Join the social platform for developers. Share updates, join discussions, and follow creators.</p>
           <button class="btn btn-primary btn-block" id="btn-sidebar-join">Join Community</button>
@@ -551,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (comment.canDelete) {
             const delBtn = document.createElement('button');
             delBtn.className = 'btn btn-ghost btn-sm';
-            delBtn.style.color = '#ef4444';
+            delBtn.style.color = 'var(--negative)';
             delBtn.innerHTML = '&times;';
             delBtn.title = 'Delete comment';
             delBtn.onclick = async () => {
