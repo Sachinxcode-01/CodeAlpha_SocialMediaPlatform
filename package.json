@@ -1,0 +1,29 @@
+{
+  "name": "novaconnect-social-media",
+  "version": "1.0.0",
+  "description": "NovaConnect - A modern, secure, full-stack social networking web platform built for CodeAlpha Full Stack Development Internship Task 2",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "social-media",
+    "express",
+    "sqlite",
+    "rest-api",
+    "vanilla-js",
+    "jwt",
+    "codealpha"
+  ],
+  "author": "Sachin K",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

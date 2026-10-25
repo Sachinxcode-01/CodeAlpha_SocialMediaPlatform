@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="NovaConnect — A modern, full-stack social networking web application featuring profiles, posts, comments, likes, and following graphs.">
+  <title>NovaConnect — Connect, Share & Discover</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand" id="brand-logo" role="button" tabindex="0">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </div>
+        <span class="brand-name">Nova<span class="brand-gradient">Connect</span></span>
+      </div>
+
+      <nav class="nav-links" id="main-nav">
+        <button class="nav-tab active" id="tab-explore" data-feed="all">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+          Explore
+        </button>
+        <button class="nav-tab" id="tab-following" data-feed="following">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Following
+        </button>
+      </nav>
+
+      <div class="auth-controls" id="auth-controls">
+        <!-- Injected via JavaScript based on session state -->
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-layout">
+    <!-- Left Sidebar / User Quick Panel -->
+    <aside class="sidebar-left">
+      <div class="user-card glass-panel" id="sidebar-user-card">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="quick-links glass-panel">
+        <h3>About Project</h3>
+        <p class="text-muted">Built for CodeAlpha Full Stack Development Internship Task 2.</p>
+        <div class="badge-list">
+          <span class="tag">Node.js</span>
+          <span class="tag">Express</span>
+          <span class="tag">SQLite</span>
+          <span class="tag">REST API</span>
+          <span class="tag">JWT</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Feed Stream -->
+    <section class="feed-section">
+      <!-- Create Post Composer -->
+      <div class="composer-card glass-panel" id="composer-container">
+        <div class="composer-header">
+          <div class="avatar composer-avatar" id="composer-user-avatar">?</div>
+          <span class="composer-title">Share an update with your network</span>
+        </div>
+        <form id="create-post-form">
+          <div class="textarea-wrapper">
+            <textarea 
+              id="post-content-input" 
+              placeholder="What's happening in tech, code, or life today?" 
+              maxlength="500" 
+              rows="3" 
+              required
+            ></textarea>
+          </div>
+          <div class="composer-footer">
+            <span class="char-count" id="composer-char-count">0 / 500</span>
+            <button type="submit" class="btn btn-primary" id="btn-submit-post">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              Publish Post
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Feed Header & Controls -->
+      <div class="feed-controls">
+        <h2 class="feed-heading" id="current-feed-heading">Explore Feed</h2>
+        <button class="btn btn-ghost btn-sm" id="btn-refresh-feed" title="Refresh Feed">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          Refresh
+        </button>
+      </div>
+
+      <!-- Posts Stream Container -->
+      <div class="posts-stream" id="posts-container">
+        <!-- Post cards inserted here -->
+      </div>
+    </section>
+
+    <!-- Right Sidebar / Suggested Users & Trends -->
+    <aside class="sidebar-right">
+      <div class="suggested-users glass-panel" id="suggested-panel">
+        <h3>Community Members</h3>
+        <p class="text-muted subtext">Connect with fellow developers</p>
+        <div class="suggested-list" id="suggested-list">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Modals Container -->
+  <!-- 1. Authentication Modal (Login / Register) -->
+  <div class="modal-backdrop" id="auth-modal" aria-hidden="true">
+    <div class="modal-card glass-panel" role="dialog" aria-modal="true">
+      <button class="modal-close-btn" id="close-auth-modal" aria-label="Close dialog">&times;</button>
+      
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="auth-tab-login">Log In</button>
+        <button class="auth-tab-btn" id="auth-tab-register">Sign Up</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="form-login" class="auth-form active">
+        <div class="form-group">
+          <label for="login-identifier">Username or Email</label>
+          <input type="text" id="login-identifier" required placeholder="e.g. sachin_k or email@example.com" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" required placeholder="Enter your password" autocomplete="current-password">
+        </div>
+        <div class="form-error" id="login-error-msg"></div>
+        <button type="submit" class="btn btn-primary btn-block" id="btn-login-submit">Log In to NovaConnect</button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="form-register" class="auth-form">
+        <div class="form-group">
+          <label for="reg-username">Username</label>
+          <input type="text" id="reg-username" required placeholder="3-30 characters (letters, numbers, _)" pattern="^[a-zA-Z0-9_]{3,30}$" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="reg-email">Email Address</label>
+          <input type="email" id="reg-email" required placeholder="you@domain.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+        </div>
+        <div class="form-error" id="register-error-msg"></div>
+        <button type="submit" class="btn btn-primary btn-block" id="btn-register-submit">Create Free Account</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. User Profile Modal -->
+  <div class="modal-backdrop" id="profile-modal" aria-hidden="true">
+    <div class="modal-card modal-large glass-panel" role="dialog" aria-modal="true">
+      <button class="modal-close-btn" id="close-profile-modal" aria-label="Close profile">&times;</button>
+      <div id="profile-modal-content">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Edit Profile Modal -->
+  <div class="modal-backdrop" id="edit-profile-modal" aria-hidden="true">
+    <div class="modal-card glass-panel" role="dialog" aria-modal="true">
+      <button class="modal-close-btn" id="close-edit-profile-modal" aria-label="Close edit profile">&times;</button>
+      <h3>Edit Your Profile</h3>
+      <form id="form-edit-profile">
+        <div class="form-group">
+          <label for="edit-bio-input">Bio / Status</label>
+          <textarea id="edit-bio-input" rows="3" maxlength="250" placeholder="Tell the community about yourself, your tech stack, or interests..."></textarea>
+          <span class="char-count" id="edit-bio-char-count">0 / 250</span>
+        </div>
+        <div class="form-error" id="edit-profile-error-msg"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="btn-cancel-edit-profile">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-profile">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Edit Post Modal -->
+  <div class="modal-backdrop" id="edit-post-modal" aria-hidden="true">
+    <div class="modal-card glass-panel" role="dialog" aria-modal="true">
+      <button class="modal-close-btn" id="close-edit-post-modal" aria-label="Close edit post">&times;</button>
+      <h3>Edit Post</h3>
+      <form id="form-edit-post">
+        <input type="hidden" id="edit-post-id">
+        <div class="form-group">
+          <label for="edit-post-content-input">Post Content</label>
+          <textarea id="edit-post-content-input" rows="4" maxlength="500" required></textarea>
+          <span class="char-count" id="edit-post-char-count">0 / 500</span>
+        </div>
+        <div class="form-error" id="edit-post-error-msg"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="btn-cancel-edit-post">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-post">Save Post</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Followers / Following List Modal -->
+  <div class="modal-backdrop" id="users-list-modal" aria-hidden="true">
+    <div class="modal-card glass-panel" role="dialog" aria-modal="true">
+      <button class="modal-close-btn" id="close-users-list-modal" aria-label="Close list">&times;</button>
+      <h3 id="users-list-title">Users</h3>
+      <div class="user-relations-list" id="users-list-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Hub -->
+  <div class="toast-hub" id="toast-hub"></div>
+
+  <!-- Scripts -->
+  <script src="/scripts/api.js"></script>
+  <script src="/scripts/app.js"></script>
+</body>
+</html>
