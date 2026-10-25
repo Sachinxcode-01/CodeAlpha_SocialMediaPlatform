@@ -1,6 +1,6 @@
 /**
  * Post & Feed Controller for NovaConnect
- * Handles post creation, global/following feed retrieval, editing, and deletion.
+ * Handles post creation (text and photos), global/following feed retrieval, editing, and deletion.
  */
 
 const crypto = require('crypto');
@@ -19,6 +19,7 @@ function getFeed(req, res) {
       SELECT 
         p.id,
         p.content,
+        p.image_url as imageUrl,
         p.created_at as createdAt,
         p.updated_at as updatedAt,
         u.id as authorId,
@@ -55,6 +56,7 @@ function getFeed(req, res) {
       return {
         id: row.id,
         content: row.content,
+        imageUrl: row.imageUrl || null,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         author: {
@@ -76,13 +78,13 @@ function getFeed(req, res) {
 }
 
 /**
- * Create a new post
+ * Create a new post (with optional photo/image)
  * POST /api/posts
  */
 function createPost(req, res) {
   try {
     const currentUserId = req.user.id;
-    const { content } = req.body || {};
+    const { content, imageUrl } = req.body || {};
 
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return res.status(400).json({ error: 'Post content cannot be empty.' });
@@ -93,16 +95,28 @@ function createPost(req, res) {
       return res.status(400).json({ error: 'Post content cannot exceed 500 characters.' });
     }
 
+    // Optional photo validation
+    let cleanImageUrl = null;
+    if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0) {
+      const trimmed = imageUrl.trim();
+      // Allow HTTP/HTTPS URLs or base64 data URLs
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+        cleanImageUrl = trimmed;
+      } else {
+        return res.status(400).json({ error: 'Invalid photo URL format. Please provide a valid HTTP URL or photo file.' });
+      }
+    }
+
     const postId = crypto.randomUUID();
 
     execute(
-      'INSERT INTO posts (id, author_id, content) VALUES (?, ?, ?)',
-      [postId, currentUserId, cleanContent]
+      'INSERT INTO posts (id, author_id, content, image_url) VALUES (?, ?, ?, ?)',
+      [postId, currentUserId, cleanContent, cleanImageUrl]
     );
 
     const created = queryOne(`
       SELECT 
-        p.id, p.content, p.created_at as createdAt, p.updated_at as updatedAt,
+        p.id, p.content, p.image_url as imageUrl, p.created_at as createdAt, p.updated_at as updatedAt,
         u.id as authorId, u.username as authorUsername
       FROM posts p
       JOIN users u ON p.author_id = u.id
@@ -114,6 +128,7 @@ function createPost(req, res) {
       post: {
         id: created.id,
         content: created.content,
+        imageUrl: created.imageUrl || null,
         createdAt: created.createdAt,
         updatedAt: created.updatedAt,
         author: {
@@ -143,7 +158,7 @@ function getPostById(req, res) {
 
     const row = queryOne(`
       SELECT 
-        p.id, p.content, p.created_at as createdAt, p.updated_at as updatedAt,
+        p.id, p.content, p.image_url as imageUrl, p.created_at as createdAt, p.updated_at as updatedAt,
         u.id as authorId, u.username as authorUsername,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likesCount,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as commentsCount
@@ -166,6 +181,7 @@ function getPostById(req, res) {
       post: {
         id: row.id,
         content: row.content,
+        imageUrl: row.imageUrl || null,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         author: {
@@ -192,9 +208,9 @@ function editPost(req, res) {
   try {
     const { postId } = req.params;
     const currentUserId = req.user.id;
-    const { content } = req.body || {};
+    const { content, imageUrl } = req.body || {};
 
-    const existingPost = queryOne('SELECT id, author_id FROM posts WHERE id = ?', [postId]);
+    const existingPost = queryOne('SELECT id, author_id, image_url FROM posts WHERE id = ?', [postId]);
     if (!existingPost) {
       return res.status(404).json({ error: 'Post not found.' });
     }
@@ -213,14 +229,26 @@ function editPost(req, res) {
       return res.status(400).json({ error: 'Post content cannot exceed 500 characters.' });
     }
 
+    let cleanImageUrl = existingPost.image_url;
+    if (imageUrl !== undefined) {
+      if (imageUrl === null || imageUrl === '') {
+        cleanImageUrl = null;
+      } else if (typeof imageUrl === 'string') {
+        const trimmed = imageUrl.trim();
+        if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+          cleanImageUrl = trimmed;
+        }
+      }
+    }
+
     execute(
-      'UPDATE posts SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [cleanContent, postId]
+      'UPDATE posts SET content = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [cleanContent, cleanImageUrl, postId]
     );
 
     const updated = queryOne(`
       SELECT 
-        p.id, p.content, p.created_at as createdAt, p.updated_at as updatedAt,
+        p.id, p.content, p.image_url as imageUrl, p.created_at as createdAt, p.updated_at as updatedAt,
         u.id as authorId, u.username as authorUsername,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likesCount,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as commentsCount
@@ -234,6 +262,7 @@ function editPost(req, res) {
       post: {
         id: updated.id,
         content: updated.content,
+        imageUrl: updated.imageUrl || null,
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt,
         author: {

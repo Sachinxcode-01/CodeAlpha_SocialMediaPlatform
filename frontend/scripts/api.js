@@ -138,17 +138,17 @@ class ApiClient {
     return this.request(`/posts/${postId}`);
   }
 
-  createPost(content) {
+  createPost(content, imageUrl = null) {
     return this.request('/posts', {
       method: 'POST',
-      body: { content }
+      body: { content, imageUrl }
     });
   }
 
-  editPost(postId, content) {
+  editPost(postId, content, imageUrl = undefined) {
     return this.request(`/posts/${postId}`, {
       method: 'PATCH',
-      body: { content }
+      body: { content, imageUrl }
     });
   }
 

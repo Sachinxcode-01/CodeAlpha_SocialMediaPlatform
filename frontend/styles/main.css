@@ -319,6 +319,58 @@ body {
   align-items: center;
   justify-content: space-between;
   margin-top: 0.85rem;
+  gap: 0.75rem;
+}
+
+.composer-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.composer-photo-preview {
+  position: relative;
+  margin-top: 0.75rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  max-height: 200px;
+  border: 1px solid var(--border);
+  background: var(--ground);
+}
+
+.composer-photo-preview img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.btn-remove-photo {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(14, 18, 26, 0.85);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.btn-remove-photo:hover {
+  background: var(--negative);
+  color: #fff;
+}
+
+.composer-photo-url-wrap {
+  margin-top: 0.75rem;
 }
 
 .char-count {
@@ -450,6 +502,28 @@ body {
   margin-bottom: 1.15rem;
 }
 
+/* Post Media / Attachment */
+.post-photo-wrap {
+  margin-bottom: 1.15rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--ground);
+}
+
+.post-photo {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.post-photo:hover {
+  opacity: 0.94;
+}
+
 .post-actions {
   display: flex;
   align-items: center;
@@ -486,6 +560,10 @@ body {
 
 .action-btn.liked svg {
   fill: var(--negative);
+}
+
+.action-btn.share-btn:hover {
+  color: var(--accent);
 }
 
 /* Comments Section */

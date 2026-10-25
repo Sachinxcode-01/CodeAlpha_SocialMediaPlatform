@@ -34,6 +34,13 @@ if (fs.existsSync(schemaPath)) {
   db.exec(schemaSQL);
 }
 
+// Migrate existing databases if image_url column is missing
+try {
+  db.exec('ALTER TABLE posts ADD COLUMN image_url TEXT DEFAULT NULL;');
+} catch {
+  // Column already exists
+}
+
 /**
  * Run a SELECT query that returns multiple rows
  * @param {string} sql 

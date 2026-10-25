@@ -127,4 +127,72 @@ describe('Workflow B: Posts and Feed Operations', () => {
     const getRes = await request(`/api/posts/${postId}`);
     assert.strictEqual(getRes.status, 404);
   });
+
+  it('POST-PHOTO-001: Creates a post with an attached photo URL and verifies in feed and single post', async () => {
+    const testImageUrl = 'https://images.unsplash.com/photo-1518770660439-4636190af475';
+    const postRes = await request('/api/posts', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { 
+        content: 'Check out my new development setup!',
+        imageUrl: testImageUrl
+      }
+    });
+
+    assert.strictEqual(postRes.status, 201);
+    assert.strictEqual(postRes.body.post.imageUrl, testImageUrl);
+    const postId = postRes.body.post.id;
+
+    // Verify in explore feed
+    const feedRes = await request('/api/posts');
+    assert.strictEqual(feedRes.status, 200);
+    assert.strictEqual(feedRes.body.posts[0].imageUrl, testImageUrl);
+
+    // Verify in single post query (used by Share permalink ?post=:id)
+    const singleRes = await request(`/api/posts/${postId}`);
+    assert.strictEqual(singleRes.status, 200);
+    assert.strictEqual(singleRes.body.post.id, postId);
+    assert.strictEqual(singleRes.body.post.imageUrl, testImageUrl);
+    assert.strictEqual(singleRes.body.post.author.username, 'author_one');
+  });
+
+  it('POST-PHOTO-002: Updates a post photo and content', async () => {
+    const initRes = await request('/api/posts', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { 
+        content: 'Initial text without photo'
+      }
+    });
+    const postId = initRes.body.post.id;
+    assert.strictEqual(initRes.body.post.imageUrl, null);
+
+    // Edit to attach photo
+    const updatedImageUrl = 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6';
+    const editRes = await request(`/api/posts/${postId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { 
+        content: 'Updated text with photo',
+        imageUrl: updatedImageUrl
+      }
+    });
+
+    assert.strictEqual(editRes.status, 200);
+    assert.strictEqual(editRes.body.post.content, 'Updated text with photo');
+    assert.strictEqual(editRes.body.post.imageUrl, updatedImageUrl);
+
+    // Remove photo
+    const removePhotoRes = await request(`/api/posts/${postId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { 
+        content: 'Updated text with photo removed',
+        imageUrl: null
+      }
+    });
+
+    assert.strictEqual(removePhotoRes.status, 200);
+    assert.strictEqual(removePhotoRes.body.post.imageUrl, null);
+  });
 });

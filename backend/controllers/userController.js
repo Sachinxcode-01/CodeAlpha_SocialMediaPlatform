@@ -119,6 +119,7 @@ function getUserPosts(req, res) {
       SELECT 
         p.id,
         p.content,
+        p.image_url as imageUrl,
         p.created_at as createdAt,
         p.updated_at as updatedAt,
         u.id as authorId,
@@ -140,6 +141,7 @@ function getUserPosts(req, res) {
       return {
         id: post.id,
         content: post.content,
+        imageUrl: post.imageUrl || null,
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
         author: {

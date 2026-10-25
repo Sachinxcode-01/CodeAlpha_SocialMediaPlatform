@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     currentUser: window.api.getCurrentUser(),
     currentFeed: 'all', // 'all' or 'following'
     posts: [],
-    activeModal: null
+    activeModal: null,
+    currentComposerPhoto: ''
   };
 
   // DOM Elements Cache
@@ -21,6 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
     composerForm: document.getElementById('create-post-form'),
     postContentInput: document.getElementById('post-content-input'),
     composerCharCount: document.getElementById('composer-char-count'),
+    composerPhotoPreview: document.getElementById('composer-photo-preview'),
+    composerPreviewImg: document.getElementById('composer-preview-img'),
+    btnRemovePhoto: document.getElementById('btn-remove-photo'),
+    composerPhotoUrlWrap: document.getElementById('composer-photo-url-wrap'),
+    postPhotoUrlInput: document.getElementById('post-photo-url-input'),
+    postPhotoFileInput: document.getElementById('post-photo-file-input'),
+    btnTriggerUpload: document.getElementById('btn-trigger-upload'),
+    btnToggleUrl: document.getElementById('btn-toggle-url'),
     postsContainer: document.getElementById('posts-container'),
     tabExplore: document.getElementById('tab-explore'),
     tabFollowing: document.getElementById('tab-following'),
@@ -57,8 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
     formEditPost: document.getElementById('form-edit-post'),
     editPostId: document.getElementById('edit-post-id'),
     editPostContentInput: document.getElementById('edit-post-content-input'),
+    editPostImageInput: document.getElementById('edit-post-image-input'),
     editPostCharCount: document.getElementById('edit-post-char-count'),
     editPostErrorMsg: document.getElementById('edit-post-error-msg'),
+
+    singlePostModal: document.getElementById('single-post-modal'),
+    closeSinglePostModal: document.getElementById('close-single-post-modal'),
+    singlePostModalContent: document.getElementById('single-post-modal-content'),
 
     usersListModal: document.getElementById('users-list-modal'),
     closeUsersListModal: document.getElementById('close-users-list-modal'),
@@ -318,8 +332,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function copyShareUrl(url) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(() => showToast('Post link copied to clipboard!'))
+        .catch(() => prompt('Copy post link:', url));
+    } else {
+      prompt('Copy post link:', url);
+    }
+  }
+
   // Construct Post Card DOM Element
-  function createPostCardElement(post) {
+  function createPostCardElement(post, options = {}) {
     const card = document.createElement('article');
     card.className = 'post-card glass-panel';
     card.id = `post-${post.id}`;
@@ -364,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
       editBtn.textContent = 'Edit';
       editBtn.onclick = (e) => {
         e.stopPropagation();
-        openEditPostModal(post.id, post.content);
+        openEditPostModal(post.id, post.content, post.imageUrl);
       };
 
       const delBtn = document.createElement('button');
@@ -394,12 +418,27 @@ document.addEventListener('DOMContentLoaded', () => {
     contentP.className = 'post-content';
     contentP.textContent = post.content;
 
-    // Actions Row (Likes & Comments)
+    // Post Photo Attachment (if present)
+    let photoWrap = null;
+    if (post.imageUrl) {
+      photoWrap = document.createElement('div');
+      photoWrap.className = 'post-photo-wrap';
+      const img = document.createElement('img');
+      img.className = 'post-photo';
+      img.src = post.imageUrl;
+      img.alt = `Photo shared by @${post.author.username}`;
+      img.loading = 'lazy';
+      img.onclick = () => openSinglePostModal(post.id);
+      photoWrap.appendChild(img);
+    }
+
+    // Actions Row (Likes, Comments, Share)
     const actionsRow = document.createElement('div');
     actionsRow.className = 'post-actions';
 
     const likeBtn = document.createElement('button');
     likeBtn.className = `action-btn ${post.isLiked ? 'liked' : ''}`;
+    likeBtn.title = post.isLiked ? 'Unlike post' : 'Like post';
     likeBtn.innerHTML = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="${post.isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -436,12 +475,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const commentBtn = document.createElement('button');
     commentBtn.className = 'action-btn';
+    commentBtn.title = 'View comments';
     commentBtn.innerHTML = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
       </svg>
       <span class="comment-counter">${post.commentsCount}</span>
     `;
+
+    // Share Button
+    const shareBtn = document.createElement('button');
+    shareBtn.className = 'action-btn share-btn';
+    shareBtn.title = 'Share post link';
+    shareBtn.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="18" cy="5" r="3"></circle>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="19" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+      </svg>
+      <span>Share</span>
+    `;
+    shareBtn.onclick = async (e) => {
+      e.stopPropagation();
+      const shareUrl = `${window.location.origin}/?post=${post.id}`;
+      const shareData = {
+        title: `NovaConnect Post by @${post.author.username}`,
+        text: post.content ? post.content.substring(0, 100) : 'Check out this post on NovaConnect',
+        url: shareUrl
+      };
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        try {
+          await navigator.share(shareData);
+          showToast('Post shared!');
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            copyShareUrl(shareUrl);
+          }
+        }
+      } else {
+        copyShareUrl(shareUrl);
+      }
+    };
 
     // Comments Container
     const commentsSec = document.createElement('div');
@@ -456,11 +532,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     actionsRow.appendChild(likeBtn);
     actionsRow.appendChild(commentBtn);
+    actionsRow.appendChild(shareBtn);
 
     card.appendChild(header);
     card.appendChild(contentP);
+    if (photoWrap) card.appendChild(photoWrap);
     card.appendChild(actionsRow);
     card.appendChild(commentsSec);
+
+    if (options && options.expandComments) {
+      commentsSec.classList.add('open');
+      loadCommentsForPost(post.id, commentsSec);
+    }
 
     return card;
   }
@@ -586,6 +669,65 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Photo Composer Helpers
+  function setComposerPhoto(dataUrlOrUrl) {
+    state.currentComposerPhoto = dataUrlOrUrl;
+    elements.composerPreviewImg.src = dataUrlOrUrl;
+    elements.composerPhotoPreview.style.display = 'block';
+  }
+
+  function clearComposerPhoto() {
+    state.currentComposerPhoto = '';
+    elements.composerPreviewImg.src = '';
+    elements.composerPhotoPreview.style.display = 'none';
+    elements.postPhotoFileInput.value = '';
+    elements.postPhotoUrlInput.value = '';
+    elements.composerPhotoUrlWrap.style.display = 'none';
+  }
+
+  // Photo Attachment Controls
+  elements.btnTriggerUpload.onclick = () => {
+    elements.postPhotoFileInput.click();
+  };
+
+  elements.postPhotoFileInput.onchange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select a valid image file.', 'error');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image file size must be under 5MB.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setComposerPhoto(ev.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  elements.btnToggleUrl.onclick = () => {
+    const isVisible = elements.composerPhotoUrlWrap.style.display !== 'none';
+    elements.composerPhotoUrlWrap.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) {
+      elements.postPhotoUrlInput.focus();
+    }
+  };
+
+  elements.postPhotoUrlInput.onchange = () => {
+    const url = elements.postPhotoUrlInput.value.trim();
+    if (url) {
+      setComposerPhoto(url);
+    }
+  };
+
+  elements.btnRemovePhoto.onclick = () => {
+    clearComposerPhoto();
+  };
+
   // Create Post Form Submission
   elements.composerForm.onsubmit = async (e) => {
     e.preventDefault();
@@ -599,9 +741,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!content) return;
 
     try {
-      const res = await window.api.createPost(content);
+      const res = await window.api.createPost(content, state.currentComposerPhoto || undefined);
       elements.postContentInput.value = '';
       elements.composerCharCount.textContent = '0 / 500';
+      clearComposerPhoto();
       showToast('Your post is live!');
 
       // Prepend to feed
@@ -622,9 +765,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Edit Post Modal
-  function openEditPostModal(postId, content) {
+  function openEditPostModal(postId, content, imageUrl = '') {
     elements.editPostId.value = postId;
     elements.editPostContentInput.value = content;
+    elements.editPostImageInput.value = imageUrl || '';
     elements.editPostCharCount.textContent = `${content.length} / 500`;
     elements.editPostErrorMsg.textContent = '';
     openModal(elements.editPostModal);
@@ -639,10 +783,11 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const postId = elements.editPostId.value;
     const content = elements.editPostContentInput.value.trim();
+    const imageUrl = elements.editPostImageInput.value.trim() || null;
     if (!content) return;
 
     try {
-      const res = await window.api.editPost(postId, content);
+      const res = await window.api.editPost(postId, content, imageUrl);
       closeModal(elements.editPostModal);
       showToast('Post updated successfully.');
 
@@ -650,11 +795,56 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.getElementById(`post-${postId}`);
       if (card) {
         card.querySelector('.post-content').textContent = res.post.content;
+        let photoWrap = card.querySelector('.post-photo-wrap');
+        if (res.post.imageUrl) {
+          if (!photoWrap) {
+            photoWrap = document.createElement('div');
+            photoWrap.className = 'post-photo-wrap';
+            const img = document.createElement('img');
+            img.className = 'post-photo';
+            img.src = res.post.imageUrl;
+            img.alt = 'Post photo attachment';
+            img.onclick = () => openSinglePostModal(res.post.id);
+            photoWrap.appendChild(img);
+            card.insertBefore(photoWrap, card.querySelector('.post-actions'));
+          } else {
+            photoWrap.querySelector('img').src = res.post.imageUrl;
+          }
+        } else if (photoWrap) {
+          photoWrap.remove();
+        }
       }
     } catch (err) {
       elements.editPostErrorMsg.textContent = err.message;
     }
   };
+
+  // Single / Shared Post Modal
+  async function openSinglePostModal(postId) {
+    elements.singlePostModalContent.innerHTML = `
+      <div class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <h4>Loading post...</h4>
+      </div>
+    `;
+    openModal(elements.singlePostModal);
+    window.history.pushState(null, '', `/?post=${postId}`);
+
+    try {
+      const res = await window.api.getPost(postId);
+      elements.singlePostModalContent.innerHTML = '';
+      const postCard = createPostCardElement(res.post, { expandComments: true });
+      elements.singlePostModalContent.appendChild(postCard);
+    } catch (err) {
+      elements.singlePostModalContent.innerHTML = `
+        <div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <h4>Post not found</h4>
+          <p class="text-muted">${escapeHtml(err.message)}</p>
+        </div>
+      `;
+    }
+  }
 
   // User Profile Modal
   async function openUserProfile(userId) {
@@ -955,11 +1145,20 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.btnCancelEditProfile.onclick = () => closeModal(elements.editProfileModal);
   elements.closeEditPostModal.onclick = () => closeModal(elements.editPostModal);
   elements.btnCancelEditPost.onclick = () => closeModal(elements.editPostModal);
+  elements.closeSinglePostModal.onclick = () => {
+    closeModal(elements.singlePostModal);
+    if (window.location.search.includes('post=')) {
+      window.history.pushState(null, '', window.location.pathname);
+    }
+  };
   elements.closeUsersListModal.onclick = () => closeModal(elements.usersListModal);
 
   // Close modal when clicking outside modal-card
   window.onclick = (e) => {
     if (e.target.classList.contains('modal-backdrop')) {
+      if (e.target === elements.singlePostModal && window.location.search.includes('post=')) {
+        window.history.pushState(null, '', window.location.pathname);
+      }
       closeModal(e.target);
     }
   };
@@ -967,6 +1166,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Close modal on Escape key
   window.onkeydown = (e) => {
     if (e.key === 'Escape' && state.activeModal) {
+      if (state.activeModal === elements.singlePostModal && window.location.search.includes('post=')) {
+        window.history.pushState(null, '', window.location.pathname);
+      }
       closeModal(state.activeModal);
     }
   };
@@ -994,4 +1196,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // App Initialization
   updateAuthUI();
   loadFeed();
+
+  // Handle shared post URL permalink
+  const urlParams = new URLSearchParams(window.location.search);
+  const sharedPostId = urlParams.get('post');
+  if (sharedPostId) {
+    openSinglePostModal(sharedPostId);
+  }
 });
