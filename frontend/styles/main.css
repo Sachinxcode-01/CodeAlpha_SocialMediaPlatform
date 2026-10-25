@@ -184,25 +184,56 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-card-banner {
+  width: calc(100% + 2.5rem);
+  margin-top: -1.25rem;
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  height: 80px;
+  background: var(--raised);
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: -36px;
 }
 
 .user-avatar-lg {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: var(--radius-full);
   background: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--accent-ink);
   margin-bottom: 0.85rem;
+  border: 3px solid var(--surface);
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.user-avatar-lg img, .avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  display: block;
 }
 
 .user-display-name {
   font-size: 1.15rem;
   font-weight: 700;
+  color: var(--text-main);
 }
 
 .user-handle {
@@ -214,7 +245,39 @@ body {
 .user-bio-text {
   font-size: 0.875rem;
   color: var(--text-muted);
-  margin-bottom: 1.15rem;
+  margin-bottom: 0.85rem;
+  word-break: break-word;
+}
+
+.profile-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.profile-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.profile-meta-item svg {
+  stroke: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.profile-meta-item a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.profile-meta-item a:hover {
+  text-decoration: underline;
 }
 
 .user-stats-grid {
@@ -776,6 +839,141 @@ body {
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+/* Profile Setup & Details Form */
+.modal-header-block {
+  margin-bottom: 1.25rem;
+}
+
+.profile-setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.profile-setup-visuals {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--ground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.banner-setup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.banner-preview-box {
+  width: 100%;
+  height: 110px;
+  background: var(--raised);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.banner-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-placeholder-text {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+.visual-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.visual-url-input {
+  flex: 1;
+}
+
+.avatar-setup-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar-preview-box {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  border: 2px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-controls-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.avatar-setup-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.form-row-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .form-row-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modal-actions-split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.modal-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-icon {
+  padding: 0.35rem 0.6rem;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 /* User Relations List Modal */

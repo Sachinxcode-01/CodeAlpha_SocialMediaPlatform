@@ -9,7 +9,12 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL COLLATE NOCASE,
     email TEXT NOT NULL COLLATE NOCASE,
     password_hash TEXT NOT NULL,
+    display_name TEXT DEFAULT '',
+    avatar_url TEXT DEFAULT '',
+    banner_url TEXT DEFAULT '',
     bio TEXT DEFAULT '',
+    location TEXT DEFAULT '',
+    website TEXT DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

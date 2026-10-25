@@ -10,7 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     currentFeed: 'all', // 'all' or 'following'
     posts: [],
     activeModal: null,
-    currentComposerPhoto: ''
+    currentComposerPhoto: '',
+    currentEditAvatar: '',
+    currentEditBanner: '',
+    cachedCurrentUserProfile: null
   };
 
   // DOM Elements Cache
@@ -56,8 +59,25 @@ document.addEventListener('DOMContentLoaded', () => {
     closeEditProfileModal: document.getElementById('close-edit-profile-modal'),
     btnCancelEditProfile: document.getElementById('btn-cancel-edit-profile'),
     formEditProfile: document.getElementById('form-edit-profile'),
+    editBannerPreview: document.getElementById('edit-banner-preview'),
+    editBannerPreviewImg: document.getElementById('edit-banner-preview-img'),
+    editBannerFileInput: document.getElementById('edit-banner-file-input'),
+    btnUploadBanner: document.getElementById('btn-upload-banner'),
+    editBannerUrlInput: document.getElementById('edit-banner-url-input'),
+    btnRemoveBanner: document.getElementById('btn-remove-banner'),
+    editAvatarPreview: document.getElementById('edit-avatar-preview'),
+    editAvatarPreviewImg: document.getElementById('edit-avatar-preview-img'),
+    editAvatarPlaceholder: document.getElementById('edit-avatar-placeholder'),
+    editAvatarFileInput: document.getElementById('edit-avatar-file-input'),
+    btnUploadAvatar: document.getElementById('btn-upload-avatar'),
+    editAvatarUrlInput: document.getElementById('edit-avatar-url-input'),
+    btnRemoveAvatar: document.getElementById('btn-remove-avatar'),
+    editDisplayNameInput: document.getElementById('edit-display-name-input'),
+    editLocationInput: document.getElementById('edit-location-input'),
+    editWebsiteInput: document.getElementById('edit-website-input'),
     editBioInput: document.getElementById('edit-bio-input'),
     editBioCharCount: document.getElementById('edit-bio-char-count'),
+    btnClearAllProfile: document.getElementById('btn-clear-all-profile'),
     editProfileErrorMsg: document.getElementById('edit-profile-error-msg'),
 
     editPostModal: document.getElementById('edit-post-modal'),
@@ -191,14 +211,54 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const data = await window.api.getUser(state.currentUser.id);
       const user = data.user;
+      state.cachedCurrentUserProfile = user;
+
+      // Update composer user avatar if present
+      if (elements.composerAvatar) {
+        if (user.avatarUrl) {
+          elements.composerAvatar.innerHTML = `<img src="${escapeHtml(user.avatarUrl)}" class="avatar-img" alt="${escapeHtml(user.username)}">`;
+        } else {
+          elements.composerAvatar.textContent = (user.displayName || user.username).charAt(0).toUpperCase();
+        }
+      }
+
+      const hasMeta = user.location || user.website;
+
       elements.sidebarUserCard.innerHTML = `
         <div class="user-card-profile">
+          ${user.bannerUrl 
+            ? `<div class="user-card-banner" style="background-image: url('${escapeHtml(user.bannerUrl)}')"></div>` 
+            : `<div class="user-card-banner"></div>`
+          }
           <div class="user-avatar-lg">
-            ${escapeHtml(user.username.charAt(0).toUpperCase())}
+            ${user.avatarUrl 
+              ? `<img src="${escapeHtml(user.avatarUrl)}" class="avatar-img" alt="${escapeHtml(user.username)}">` 
+              : escapeHtml((user.displayName || user.username).charAt(0).toUpperCase())
+            }
           </div>
-          <h3 class="user-display-name">@${escapeHtml(user.username)}</h3>
-          <p class="user-bio-text">${user.bio ? escapeHtml(user.bio) : '<em>No bio yet. Click edit to add one!</em>'}</p>
-          <button class="btn btn-ghost btn-sm btn-block" id="btn-sidebar-edit-bio">Edit Profile</button>
+          <h3 class="user-display-name">${escapeHtml(user.displayName || user.username)}</h3>
+          <div class="user-handle">@${escapeHtml(user.username)}</div>
+          
+          <p class="user-bio-text">${user.bio ? escapeHtml(user.bio) : '<em>No bio yet. Click below to set up your profile!</em>'}</p>
+
+          ${hasMeta ? `
+            <div class="profile-meta-row">
+              ${user.location ? `
+                <span class="profile-meta-item">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  ${escapeHtml(user.location)}
+                </span>
+              ` : ''}
+              ${user.website ? `
+                <span class="profile-meta-item">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  <a href="${escapeHtml(user.website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(user.website.replace(/^https?:\/\//, ''))}</a>
+                </span>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          <button class="btn btn-ghost btn-sm btn-block" id="btn-sidebar-edit-bio">Set Up Profile</button>
           
           <div class="user-stats-grid">
             <div class="stat-item" id="sidebar-stat-posts">
@@ -217,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      document.getElementById('btn-sidebar-edit-bio').onclick = () => openEditProfileModal(user.bio);
+      document.getElementById('btn-sidebar-edit-bio').onclick = () => openEditProfileModal(user);
       document.getElementById('sidebar-stat-followers').onclick = () => openUsersListModal('followers', user.id, user.username);
       document.getElementById('sidebar-stat-following').onclick = () => openUsersListModal('following', user.id, user.username);
       document.getElementById('sidebar-stat-posts').onclick = () => openUserProfile(user.id);
@@ -361,12 +421,21 @@ document.addEventListener('DOMContentLoaded', () => {
     avatar.style.width = '36px';
     avatar.style.height = '36px';
     avatar.style.fontSize = '0.85rem';
-    avatar.textContent = post.author.username.charAt(0).toUpperCase();
+    avatar.style.overflow = 'hidden';
+    if (post.author.avatarUrl) {
+      avatar.innerHTML = `<img src="${escapeHtml(post.author.avatarUrl)}" class="avatar-img" alt="${escapeHtml(post.author.username)}">`;
+    } else {
+      avatar.textContent = (post.author.displayName || post.author.username).charAt(0).toUpperCase();
+    }
 
     const nameCol = document.createElement('div');
     const nameSpan = document.createElement('div');
     nameSpan.className = 'post-author-name';
-    nameSpan.textContent = `@${post.author.username}`;
+    if (post.author.displayName && post.author.displayName !== post.author.username) {
+      nameSpan.innerHTML = `${escapeHtml(post.author.displayName)} <span class="text-muted" style="font-weight:400;font-size:0.8rem;">@${escapeHtml(post.author.username)}</span>`;
+    } else {
+      nameSpan.textContent = `@${post.author.username}`;
+    }
 
     const timeSpan = document.createElement('div');
     timeSpan.className = 'post-time';
@@ -864,16 +933,47 @@ document.addEventListener('DOMContentLoaded', () => {
       const user = profileData.user;
       const posts = postsData.posts || [];
 
+      const hasMeta = user.location || user.website;
+
       elements.profileModalContent.innerHTML = `
         <div class="user-card-profile" style="margin-bottom:1.5rem;">
-          <div class="user-avatar-lg">${escapeHtml(user.username.charAt(0).toUpperCase())}</div>
-          <h2 class="user-display-name">@${escapeHtml(user.username)}</h2>
-          <p class="user-bio-text">${user.bio ? escapeHtml(user.bio) : '<em>No bio provided.</em>'}</p>
+          ${user.bannerUrl 
+            ? `<div class="user-card-banner" style="background-image: url('${escapeHtml(user.bannerUrl)}')"></div>` 
+            : `<div class="user-card-banner"></div>`
+          }
+          <div class="user-avatar-lg">
+            ${user.avatarUrl 
+              ? `<img src="${escapeHtml(user.avatarUrl)}" class="avatar-img" alt="${escapeHtml(user.username)}">` 
+              : escapeHtml((user.displayName || user.username).charAt(0).toUpperCase())
+            }
+          </div>
+          <h2 class="user-display-name">${escapeHtml(user.displayName || user.username)}</h2>
+          <div class="user-handle">@${escapeHtml(user.username)}</div>
+
+          <p class="user-bio-text">${user.bio ? escapeHtml(user.bio) : '<em>No bio provided yet.</em>'}</p>
+
+          ${hasMeta ? `
+            <div class="profile-meta-row">
+              ${user.location ? `
+                <span class="profile-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  ${escapeHtml(user.location)}
+                </span>
+              ` : ''}
+              ${user.website ? `
+                <span class="profile-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  <a href="${escapeHtml(user.website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(user.website.replace(/^https?:\/\//, ''))}</a>
+                </span>
+              ` : ''}
+            </div>
+          ` : ''}
+
           <p class="post-time" style="margin-bottom:1rem;">Member since ${new Date(user.createdAt).toLocaleDateString()}</p>
           
           <div id="profile-action-container" style="margin-bottom:1rem;">
             ${user.isSelf 
-              ? `<button class="btn btn-ghost btn-sm" id="btn-modal-edit-bio">Edit Profile</button>`
+              ? `<button class="btn btn-ghost btn-sm" id="btn-modal-edit-bio">Set Up Profile</button>`
               : `<button class="btn ${user.isFollowing ? 'btn-ghost' : 'btn-primary'} btn-sm" id="btn-modal-follow-toggle">
                   ${user.isFollowing ? 'Unfollow' : 'Follow User'}
                  </button>`
@@ -896,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
-        <h3 style="margin-bottom:1rem; border-bottom:1px solid var(--border-glass); padding-bottom:0.5rem;">Posts by @${escapeHtml(user.username)}</h3>
+        <h3 style="margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">Posts by @${escapeHtml(user.username)}</h3>
         <div class="posts-stream" id="modal-user-posts"></div>
       `;
 
@@ -904,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (user.isSelf) {
         document.getElementById('btn-modal-edit-bio').onclick = () => {
           closeModal(elements.profileModal);
-          openEditProfileModal(user.bio);
+          openEditProfileModal(user);
         };
       } else {
         const followBtn = document.getElementById('btn-modal-follow-toggle');
@@ -961,29 +1061,216 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Profile Setup & Edit Helpers
+  function setEditAvatar(urlOrData) {
+    state.currentEditAvatar = urlOrData || '';
+    if (elements.editAvatarPreviewImg) {
+      if (urlOrData) {
+        elements.editAvatarPreviewImg.src = urlOrData;
+        elements.editAvatarPreviewImg.style.display = 'block';
+        if (elements.editAvatarPlaceholder) elements.editAvatarPlaceholder.style.display = 'none';
+      } else {
+        elements.editAvatarPreviewImg.src = '';
+        elements.editAvatarPreviewImg.style.display = 'none';
+        if (elements.editAvatarPlaceholder) elements.editAvatarPlaceholder.style.display = 'block';
+      }
+    }
+  }
+
+  function setEditBanner(urlOrData) {
+    state.currentEditBanner = urlOrData || '';
+    if (elements.editBannerPreviewImg) {
+      const placeholderText = elements.editBannerPreview ? elements.editBannerPreview.querySelector('.preview-placeholder-text') : null;
+      if (urlOrData) {
+        elements.editBannerPreviewImg.src = urlOrData;
+        elements.editBannerPreviewImg.style.display = 'block';
+        if (placeholderText) placeholderText.style.display = 'none';
+      } else {
+        elements.editBannerPreviewImg.src = '';
+        elements.editBannerPreviewImg.style.display = 'none';
+        if (placeholderText) placeholderText.style.display = 'block';
+      }
+    }
+  }
+
+  // Edit Profile Visual Asset Handlers
+  if (elements.btnUploadAvatar) {
+    elements.btnUploadAvatar.onclick = () => elements.editAvatarFileInput.click();
+  }
+
+  if (elements.editAvatarFileInput) {
+    elements.editAvatarFileInput.onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          showToast('Please select a valid image file.', 'error');
+          return;
+        }
+        if (file.size > 3 * 1024 * 1024) {
+          showToast('Avatar file size must be under 3MB.', 'error');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setEditAvatar(ev.target.result);
+          if (elements.editAvatarUrlInput) elements.editAvatarUrlInput.value = '';
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
+
+  if (elements.editAvatarUrlInput) {
+    elements.editAvatarUrlInput.oninput = () => {
+      const url = elements.editAvatarUrlInput.value.trim();
+      if (url) {
+        setEditAvatar(url);
+      }
+    };
+  }
+
+  if (elements.btnRemoveAvatar) {
+    elements.btnRemoveAvatar.onclick = () => {
+      setEditAvatar('');
+      if (elements.editAvatarUrlInput) elements.editAvatarUrlInput.value = '';
+      if (elements.editAvatarFileInput) elements.editAvatarFileInput.value = '';
+    };
+  }
+
+  if (elements.btnUploadBanner) {
+    elements.btnUploadBanner.onclick = () => elements.editBannerFileInput.click();
+  }
+
+  if (elements.editBannerFileInput) {
+    elements.editBannerFileInput.onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          showToast('Please select a valid image file.', 'error');
+          return;
+        }
+        if (file.size > 3 * 1024 * 1024) {
+          showToast('Banner file size must be under 3MB.', 'error');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setEditBanner(ev.target.result);
+          if (elements.editBannerUrlInput) elements.editBannerUrlInput.value = '';
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
+
+  if (elements.editBannerUrlInput) {
+    elements.editBannerUrlInput.oninput = () => {
+      const url = elements.editBannerUrlInput.value.trim();
+      if (url) {
+        setEditBanner(url);
+      }
+    };
+  }
+
+  if (elements.btnRemoveBanner) {
+    elements.btnRemoveBanner.onclick = () => {
+      setEditBanner('');
+      if (elements.editBannerUrlInput) elements.editBannerUrlInput.value = '';
+      if (elements.editBannerFileInput) elements.editBannerFileInput.value = '';
+    };
+  }
+
+  // Clear All Basic Profile Fields
+  if (elements.btnClearAllProfile) {
+    elements.btnClearAllProfile.onclick = () => {
+      if (elements.editDisplayNameInput) elements.editDisplayNameInput.value = '';
+      if (elements.editLocationInput) elements.editLocationInput.value = '';
+      if (elements.editWebsiteInput) elements.editWebsiteInput.value = '';
+      if (elements.editBioInput) elements.editBioInput.value = '';
+      if (elements.editBioCharCount) elements.editBioCharCount.textContent = '0 / 250';
+      if (elements.editAvatarUrlInput) elements.editAvatarUrlInput.value = '';
+      if (elements.editAvatarFileInput) elements.editAvatarFileInput.value = '';
+      if (elements.editBannerUrlInput) elements.editBannerUrlInput.value = '';
+      if (elements.editBannerFileInput) elements.editBannerFileInput.value = '';
+      setEditAvatar('');
+      setEditBanner('');
+      showToast('All basic profile fields cleared. Click "Save Profile" to apply.');
+    };
+  }
+
   // Edit Profile Modal
-  function openEditProfileModal(currentBio = '') {
-    elements.editBioInput.value = currentBio;
-    elements.editBioCharCount.textContent = `${currentBio.length} / 250`;
-    elements.editProfileErrorMsg.textContent = '';
+  async function openEditProfileModal(userData = null) {
+    let user = userData;
+    if (!user || typeof user === 'string') {
+      try {
+        const res = await window.api.getUser(state.currentUser.id);
+        user = res.user;
+      } catch {
+        user = { bio: typeof userData === 'string' ? userData : '' };
+      }
+    }
+
+    if (elements.editDisplayNameInput) {
+      elements.editDisplayNameInput.value = user.displayName || user.username || '';
+    }
+    if (elements.editLocationInput) {
+      elements.editLocationInput.value = user.location || '';
+    }
+    if (elements.editWebsiteInput) {
+      elements.editWebsiteInput.value = user.website || '';
+    }
+    if (elements.editBioInput) {
+      elements.editBioInput.value = user.bio || '';
+      if (elements.editBioCharCount) {
+        elements.editBioCharCount.textContent = `${(user.bio || '').length} / 250`;
+      }
+    }
+    if (elements.editAvatarUrlInput) elements.editAvatarUrlInput.value = '';
+    if (elements.editBannerUrlInput) elements.editBannerUrlInput.value = '';
+    if (elements.editAvatarPlaceholder) {
+      elements.editAvatarPlaceholder.textContent = (user.displayName || user.username || '?').charAt(0).toUpperCase();
+    }
+    setEditAvatar(user.avatarUrl || '');
+    setEditBanner(user.bannerUrl || '');
+    if (elements.editProfileErrorMsg) elements.editProfileErrorMsg.textContent = '';
     openModal(elements.editProfileModal);
   }
 
-  elements.editBioInput.oninput = () => {
-    const len = elements.editBioInput.value.length;
-    elements.editBioCharCount.textContent = `${len} / 250`;
-  };
+  if (elements.editBioInput) {
+    elements.editBioInput.oninput = () => {
+      const len = elements.editBioInput.value.length;
+      if (elements.editBioCharCount) elements.editBioCharCount.textContent = `${len} / 250`;
+    };
+  }
 
   elements.formEditProfile.onsubmit = async (e) => {
     e.preventDefault();
-    const bio = elements.editBioInput.value.trim();
+    const displayName = elements.editDisplayNameInput ? elements.editDisplayNameInput.value.trim() : '';
+    const location = elements.editLocationInput ? elements.editLocationInput.value.trim() : '';
+    const website = elements.editWebsiteInput ? elements.editWebsiteInput.value.trim() : '';
+    const bio = elements.editBioInput ? elements.editBioInput.value.trim() : '';
+    const avatarUrl = state.currentEditAvatar || '';
+    const bannerUrl = state.currentEditBanner || '';
+
     try {
-      const res = await window.api.updateProfile(bio);
+      await window.api.updateProfile({
+        displayName,
+        location,
+        website,
+        bio,
+        avatarUrl,
+        bannerUrl
+      });
       closeModal(elements.editProfileModal);
-      showToast('Profile bio updated!');
+      showToast('Profile updated successfully!');
       renderSidebarProfile();
+      loadFeed();
     } catch (err) {
-      elements.editProfileErrorMsg.textContent = err.message;
+      if (elements.editProfileErrorMsg) {
+        elements.editProfileErrorMsg.textContent = err.message;
+      } else {
+        showToast(err.message, 'error');
+      }
     }
   };
 

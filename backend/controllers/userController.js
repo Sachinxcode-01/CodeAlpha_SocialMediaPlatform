@@ -16,7 +16,7 @@ function getUserProfile(req, res) {
 
     // Search by ID or by exact username
     const user = queryOne(
-      'SELECT id, username, bio, created_at FROM users WHERE id = ? OR username = ?',
+      'SELECT id, username, display_name, avatar_url, banner_url, bio, location, website, created_at FROM users WHERE id = ? OR username = ?',
       [userId, userId]
     );
 
@@ -43,7 +43,12 @@ function getUserProfile(req, res) {
       user: {
         id: user.id,
         username: user.username,
+        displayName: user.display_name || user.username,
+        avatarUrl: user.avatar_url || '',
+        bannerUrl: user.banner_url || '',
         bio: user.bio || '',
+        location: user.location || '',
+        website: user.website || '',
         createdAt: user.created_at,
         postsCount: postsCountRow ? postsCountRow.count : 0,
         followersCount: followersCountRow ? followersCountRow.count : 0,
@@ -59,29 +64,101 @@ function getUserProfile(req, res) {
 }
 
 /**
- * Update current user profile (bio)
+ * Update current user profile (bio, displayName, avatar, banner, location, website, or clearAll)
  * PATCH /api/users/me
  */
 function updateProfile(req, res) {
   try {
     const currentUserId = req.user.id;
-    const { bio } = req.body || {};
+    const body = req.body || {};
 
-    let cleanBio = '';
-    if (typeof bio === 'string') {
-      if (bio.length > 250) {
-        return res.status(400).json({ error: 'Bio cannot exceed 250 characters.' });
+    const existingUser = queryOne(
+      'SELECT display_name, avatar_url, banner_url, bio, location, website FROM users WHERE id = ?',
+      [currentUserId]
+    );
+
+    if (!existingUser) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    let cleanDisplayName = existingUser.display_name || '';
+    let cleanAvatarUrl = existingUser.avatar_url || '';
+    let cleanBannerUrl = existingUser.banner_url || '';
+    let cleanBio = existingUser.bio || '';
+    let cleanLocation = existingUser.location || '';
+    let cleanWebsite = existingUser.website || '';
+
+    // If user asked to clear all optional profile fields
+    if (body.clearAll === true) {
+      cleanDisplayName = '';
+      cleanAvatarUrl = '';
+      cleanBannerUrl = '';
+      cleanBio = '';
+      cleanLocation = '';
+      cleanWebsite = '';
+    } else {
+      if (body.displayName !== undefined) {
+        if (typeof body.displayName === 'string') {
+          if (body.displayName.trim().length > 50) {
+            return res.status(400).json({ error: 'Display name cannot exceed 50 characters.' });
+          }
+          cleanDisplayName = body.displayName.trim();
+        } else if (body.displayName === null) {
+          cleanDisplayName = '';
+        }
       }
-      cleanBio = bio.trim();
+
+      if (body.avatarUrl !== undefined) {
+        cleanAvatarUrl = typeof body.avatarUrl === 'string' ? body.avatarUrl.trim() : '';
+      }
+
+      if (body.bannerUrl !== undefined) {
+        cleanBannerUrl = typeof body.bannerUrl === 'string' ? body.bannerUrl.trim() : '';
+      }
+
+      if (body.bio !== undefined) {
+        if (typeof body.bio === 'string') {
+          if (body.bio.length > 250) {
+            return res.status(400).json({ error: 'Bio cannot exceed 250 characters.' });
+          }
+          cleanBio = body.bio.trim();
+        } else if (body.bio === null) {
+          cleanBio = '';
+        }
+      }
+
+      if (body.location !== undefined) {
+        if (typeof body.location === 'string') {
+          if (body.location.trim().length > 80) {
+            return res.status(400).json({ error: 'Location cannot exceed 80 characters.' });
+          }
+          cleanLocation = body.location.trim();
+        } else if (body.location === null) {
+          cleanLocation = '';
+        }
+      }
+
+      if (body.website !== undefined) {
+        if (typeof body.website === 'string') {
+          if (body.website.trim().length > 120) {
+            return res.status(400).json({ error: 'Website URL cannot exceed 120 characters.' });
+          }
+          cleanWebsite = body.website.trim();
+        } else if (body.website === null) {
+          cleanWebsite = '';
+        }
+      }
     }
 
     execute(
-      'UPDATE users SET bio = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [cleanBio, currentUserId]
+      `UPDATE users 
+       SET display_name = ?, avatar_url = ?, banner_url = ?, bio = ?, location = ?, website = ?, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [cleanDisplayName, cleanAvatarUrl, cleanBannerUrl, cleanBio, cleanLocation, cleanWebsite, currentUserId]
     );
 
     const updatedUser = queryOne(
-      'SELECT id, username, email, bio, created_at, updated_at FROM users WHERE id = ?',
+      'SELECT id, username, email, display_name, avatar_url, banner_url, bio, location, website, created_at, updated_at FROM users WHERE id = ?',
       [currentUserId]
     );
 
@@ -91,7 +168,12 @@ function updateProfile(req, res) {
         id: updatedUser.id,
         username: updatedUser.username,
         email: updatedUser.email,
-        bio: updatedUser.bio,
+        displayName: updatedUser.display_name || updatedUser.username,
+        avatarUrl: updatedUser.avatar_url || '',
+        bannerUrl: updatedUser.banner_url || '',
+        bio: updatedUser.bio || '',
+        location: updatedUser.location || '',
+        website: updatedUser.website || '',
         createdAt: updatedUser.created_at
       }
     });
@@ -124,6 +206,8 @@ function getUserPosts(req, res) {
         p.updated_at as updatedAt,
         u.id as authorId,
         u.username as authorUsername,
+        u.display_name as authorDisplayName,
+        u.avatar_url as authorAvatarUrl,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likesCount,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as commentsCount
       FROM posts p
@@ -146,7 +230,9 @@ function getUserPosts(req, res) {
         updatedAt: post.updatedAt,
         author: {
           id: post.authorId,
-          username: post.authorUsername
+          username: post.authorUsername,
+          displayName: post.authorDisplayName || post.authorUsername,
+          avatarUrl: post.authorAvatarUrl || ''
         },
         likesCount: post.likesCount || 0,
         commentsCount: post.commentsCount || 0,
@@ -180,6 +266,8 @@ function getFollowers(req, res) {
       SELECT 
         u.id, 
         u.username, 
+        u.display_name,
+        u.avatar_url,
         u.bio, 
         f.created_at as followedAt
       FROM follows f
@@ -197,6 +285,8 @@ function getFollowers(req, res) {
       return {
         id: f.id,
         username: f.username,
+        displayName: f.display_name || f.username,
+        avatarUrl: f.avatar_url || '',
         bio: f.bio || '',
         followedAt: f.followedAt,
         isFollowing,
@@ -229,6 +319,8 @@ function getFollowing(req, res) {
       SELECT 
         u.id, 
         u.username, 
+        u.display_name,
+        u.avatar_url,
         u.bio, 
         f.created_at as followedAt
       FROM follows f
@@ -246,6 +338,8 @@ function getFollowing(req, res) {
       return {
         id: f.id,
         username: f.username,
+        displayName: f.display_name || f.username,
+        avatarUrl: f.avatar_url || '',
         bio: f.bio || '',
         followedAt: f.followedAt,
         isFollowing,

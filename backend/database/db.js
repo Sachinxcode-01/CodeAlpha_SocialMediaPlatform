@@ -34,12 +34,13 @@ if (fs.existsSync(schemaPath)) {
   db.exec(schemaSQL);
 }
 
-// Migrate existing databases if image_url column is missing
-try {
-  db.exec('ALTER TABLE posts ADD COLUMN image_url TEXT DEFAULT NULL;');
-} catch {
-  // Column already exists
-}
+// Migrate existing databases if columns are missing
+try { db.exec('ALTER TABLE posts ADD COLUMN image_url TEXT DEFAULT NULL;'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN display_name TEXT DEFAULT "";'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT DEFAULT "";'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN banner_url TEXT DEFAULT "";'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN location TEXT DEFAULT "";'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN website TEXT DEFAULT "";'); } catch {}
 
 /**
  * Run a SELECT query that returns multiple rows

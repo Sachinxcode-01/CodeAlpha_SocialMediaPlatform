@@ -24,6 +24,8 @@ function getFeed(req, res) {
         p.updated_at as updatedAt,
         u.id as authorId,
         u.username as authorUsername,
+        u.display_name as authorDisplayName,
+        u.avatar_url as authorAvatarUrl,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likesCount,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as commentsCount
       FROM posts p
@@ -61,7 +63,9 @@ function getFeed(req, res) {
         updatedAt: row.updatedAt,
         author: {
           id: row.authorId,
-          username: row.authorUsername
+          username: row.authorUsername,
+          displayName: row.authorDisplayName || row.authorUsername,
+          avatarUrl: row.authorAvatarUrl || ''
         },
         likesCount: row.likesCount || 0,
         commentsCount: row.commentsCount || 0,
@@ -117,7 +121,7 @@ function createPost(req, res) {
     const created = queryOne(`
       SELECT 
         p.id, p.content, p.image_url as imageUrl, p.created_at as createdAt, p.updated_at as updatedAt,
-        u.id as authorId, u.username as authorUsername
+        u.id as authorId, u.username as authorUsername, u.display_name as authorDisplayName, u.avatar_url as authorAvatarUrl
       FROM posts p
       JOIN users u ON p.author_id = u.id
       WHERE p.id = ?
@@ -133,7 +137,9 @@ function createPost(req, res) {
         updatedAt: created.updatedAt,
         author: {
           id: created.authorId,
-          username: created.authorUsername
+          username: created.authorUsername,
+          displayName: created.authorDisplayName || created.authorUsername,
+          avatarUrl: created.authorAvatarUrl || ''
         },
         likesCount: 0,
         commentsCount: 0,
@@ -159,7 +165,7 @@ function getPostById(req, res) {
     const row = queryOne(`
       SELECT 
         p.id, p.content, p.image_url as imageUrl, p.created_at as createdAt, p.updated_at as updatedAt,
-        u.id as authorId, u.username as authorUsername,
+        u.id as authorId, u.username as authorUsername, u.display_name as authorDisplayName, u.avatar_url as authorAvatarUrl,
         (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likesCount,
         (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as commentsCount
       FROM posts p
@@ -186,7 +192,9 @@ function getPostById(req, res) {
         updatedAt: row.updatedAt,
         author: {
           id: row.authorId,
-          username: row.authorUsername
+          username: row.authorUsername,
+          displayName: row.authorDisplayName || row.authorUsername,
+          avatarUrl: row.authorAvatarUrl || ''
         },
         likesCount: row.likesCount || 0,
         commentsCount: row.commentsCount || 0,

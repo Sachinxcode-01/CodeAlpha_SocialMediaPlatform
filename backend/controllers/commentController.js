@@ -26,7 +26,9 @@ function getComments(req, res) {
         c.content,
         c.created_at as createdAt,
         u.id as authorId,
-        u.username as authorUsername
+        u.username as authorUsername,
+        u.display_name as authorDisplayName,
+        u.avatar_url as authorAvatarUrl
       FROM comments c
       JOIN users u ON c.author_id = u.id
       WHERE c.post_id = ?
@@ -39,7 +41,9 @@ function getComments(req, res) {
       createdAt: r.createdAt,
       author: {
         id: r.authorId,
-        username: r.authorUsername
+        username: r.authorUsername,
+        displayName: r.authorDisplayName || r.authorUsername,
+        avatarUrl: r.authorAvatarUrl || ''
       },
       isAuthor: currentUserId === r.authorId,
       canDelete: currentUserId === r.authorId || currentUserId === post.author_id
@@ -86,7 +90,8 @@ function addComment(req, res) {
     const created = queryOne(`
       SELECT 
         c.id, c.content, c.created_at as createdAt,
-        u.id as authorId, u.username as authorUsername
+        u.id as authorId, u.username as authorUsername,
+        u.display_name as authorDisplayName, u.avatar_url as authorAvatarUrl
       FROM comments c
       JOIN users u ON c.author_id = u.id
       WHERE c.id = ?
@@ -100,7 +105,9 @@ function addComment(req, res) {
         createdAt: created.createdAt,
         author: {
           id: created.authorId,
-          username: created.authorUsername
+          username: created.authorUsername,
+          displayName: created.authorDisplayName || created.authorUsername,
+          avatarUrl: created.authorAvatarUrl || ''
         },
         isAuthor: true,
         canDelete: true

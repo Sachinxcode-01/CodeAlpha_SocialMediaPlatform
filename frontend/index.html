@@ -190,21 +190,90 @@
     </div>
   </div>
 
-  <!-- 3. Edit Profile Modal -->
+  <!-- 3. Edit Profile Modal (Profile Setup) -->
   <div class="modal-backdrop" id="edit-profile-modal" aria-hidden="true">
-    <div class="modal-card glass-panel" role="dialog" aria-modal="true">
+    <div class="modal-card modal-large glass-panel" role="dialog" aria-modal="true">
       <button class="modal-close-btn" id="close-edit-profile-modal" aria-label="Close edit profile">&times;</button>
-      <h3>Edit Your Profile</h3>
-      <form id="form-edit-profile">
+      <div class="modal-header-block">
+        <h3>Profile Setup & Details</h3>
+        <p class="text-muted subtext">Customize your public developer persona across NovaConnect</p>
+      </div>
+
+      <form id="form-edit-profile" class="profile-setup-form">
+        <!-- Visual Assets Setup: Banner & Avatar -->
+        <div class="profile-setup-visuals">
+          <!-- Banner Preview & Controls -->
+          <div class="banner-setup-card">
+            <div class="banner-preview-box" id="edit-banner-preview">
+              <span class="preview-placeholder-text">Header Banner (1200×300 recommended)</span>
+              <img id="edit-banner-preview-img" src="" alt="Banner preview" style="display: none;">
+            </div>
+            <div class="visual-controls-row">
+              <input type="file" id="edit-banner-file-input" accept="image/*" style="display: none;">
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-upload-banner">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Upload Banner
+              </button>
+              <input type="url" id="edit-banner-url-input" placeholder="Or paste banner image URL" class="comment-input visual-url-input">
+              <button type="button" class="btn btn-ghost btn-sm btn-icon" id="btn-remove-banner" title="Remove Banner">&times;</button>
+            </div>
+          </div>
+
+          <!-- Avatar Preview & Controls -->
+          <div class="avatar-setup-row">
+            <div class="avatar-preview-box" id="edit-avatar-preview">
+              <span id="edit-avatar-placeholder">?</span>
+              <img id="edit-avatar-preview-img" src="" alt="Avatar preview" style="display: none;">
+            </div>
+            <div class="avatar-controls-col">
+              <span class="avatar-setup-label">Profile Photo</span>
+              <div class="visual-controls-row">
+                <input type="file" id="edit-avatar-file-input" accept="image/*" style="display: none;">
+                <button type="button" class="btn btn-ghost btn-sm" id="btn-upload-avatar">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                  Upload Avatar
+                </button>
+                <input type="url" id="edit-avatar-url-input" placeholder="Or paste avatar URL" class="comment-input visual-url-input">
+                <button type="button" class="btn btn-ghost btn-sm btn-icon" id="btn-remove-avatar" title="Remove Avatar">&times;</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Basic Text Info -->
+        <div class="form-row-grid">
+          <div class="form-group">
+            <label for="edit-display-name-input">Display Name / Full Name</label>
+            <input type="text" id="edit-display-name-input" maxlength="50" placeholder="e.g. Alex Rivers">
+          </div>
+          <div class="form-group">
+            <label for="edit-location-input">Location</label>
+            <input type="text" id="edit-location-input" maxlength="80" placeholder="e.g. San Francisco, CA / Remote">
+          </div>
+        </div>
+
         <div class="form-group">
-          <label for="edit-bio-input">Bio / Status</label>
-          <textarea id="edit-bio-input" rows="3" maxlength="250" placeholder="Tell the community about yourself, your tech stack, or interests..."></textarea>
+          <label for="edit-website-input">Website / Portfolio / GitHub Link</label>
+          <input type="url" id="edit-website-input" maxlength="120" placeholder="https://github.com/yourusername">
+        </div>
+
+        <div class="form-group">
+          <label for="edit-bio-input">Bio / About Me</label>
+          <textarea id="edit-bio-input" rows="3" maxlength="250" placeholder="Tell the community about your journey, tech stack, and what you're building..."></textarea>
           <span class="char-count" id="edit-bio-char-count">0 / 250</span>
         </div>
+
         <div class="form-error" id="edit-profile-error-msg"></div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-ghost" id="btn-cancel-edit-profile">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="btn-save-profile">Save Changes</button>
+
+        <div class="modal-actions-split">
+          <button type="button" class="btn btn-danger btn-sm" id="btn-clear-all-profile" title="Clear all basic profile fields">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Clear All
+          </button>
+          <div class="modal-actions-right">
+            <button type="button" class="btn btn-ghost" id="btn-cancel-edit-profile">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-profile">Save Profile</button>
+          </div>
         </div>
       </form>
     </div>

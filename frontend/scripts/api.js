@@ -110,10 +110,12 @@ class ApiClient {
     return this.request(`/users/${userId}`);
   }
 
-  updateProfile(bio) {
+  updateProfile(profileData) {
+    // Accepts either an object { displayName, avatarUrl, bannerUrl, bio, location, website, clearAll } or string bio
+    const body = typeof profileData === 'string' ? { bio: profileData } : (profileData || {});
     return this.request('/users/me', {
       method: 'PATCH',
-      body: { bio }
+      body
     });
   }
 
